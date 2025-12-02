@@ -1,29 +1,33 @@
-from difflib import SequenceMatcher
+import json
+from rapidfuzz import fuzz
 
-class RecipientMatcher:
+class FuzzyMatcher:
 
-    def __init__(self, db_file):
-        import json
-        with open(db_file, "r") as f:
+    def __init__(self, db_path="data/recipient_db.json"):
+        with open(db_path, "r", encoding="utf-8") as f:
             self.db = json.load(f)["recipients"]
 
-    def match_pair(self, name, address):
-        best = None
+    def match(self, extracted_name, extracted_address):
+        if not extracted_name and not extracted_address:
+            return None
+
+        best_record = None
         best_score = 0
 
         for r in self.db:
-            db_name = f"{r['first_name']} {r['last_name']}"
-            db_address = r['address']
+            full_name = f"{r['first_name']} {r['last_name']}"
+            address = r["address"]
 
-            name_score = SequenceMatcher(None, name.lower(), db_name.lower()).ratio()
-            addr_score = SequenceMatcher(None, address.lower(), db_address.lower()).ratio()
+            name_score = fuzz.token_set_ratio(extracted_name.lower(), full_name.lower()) if extracted_name else 0
+            addr_score = fuzz.token_set_ratio(extracted_address.lower(), address.lower()) if extracted_address else 0
 
-            score = (name_score * 0.7) + (addr_score * 0.3)
+            final_score = (name_score * 0.7) + (addr_score * 0.3)
 
-            if score > best_score:
-                best_score = score
-                best = r
+            if final_score > best_score:
+                best_score = final_score
+                best_record = r
 
-        if best_score >= 0.50:
-            return [best]
-        return []
+        if best_score < 60:  # threshold
+            return None
+
+        return best_record

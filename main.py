@@ -1,11 +1,16 @@
 from src.pipeline import OCRPipeline
 
-if __name__ == "__main__":
-    pipeline = OCRPipeline()
-    results = pipeline.run()
+pipeline = OCRPipeline()
+results = pipeline.run()
 
-    for r in results:
-        print("\n=== RESULT ===")
-        print("Extracted Name:", r["name"])
-        print("Extracted Address:", r["address"])
-        print("Match:", r["matches"])
+for r in results:
+    print("\n=== RESULT ===")
+    print("Extracted Name:", r.get("name"))
+    print("Extracted Address:", r.get("address"))
+
+    # match key exists in pipeline output
+    if r.get("match"):
+        print("Match Found:", r["match"]["preferred_full_name"])
+        print("Address:", r["match"]["address"])
+    else:
+        print("Match: No record found")
